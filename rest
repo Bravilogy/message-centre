@@ -2,29 +2,54 @@
 POST http://localhost:8080
 Content-Type: application/json
 {
-    "service": "twitter",
-    "payload": {
-        "tweet": "This is a cool tweet"
-    }
+    "services": [
+        { 
+            "type": "twitter",
+            "payload": {
+                "tweet": "This is a cool tweet"
+            }
+        }
+    ]
 }
 
 # Facebook service
 POST http://localhost:8080
 Content-Type: application/json
 {
-    "service": "facebook",
-    "payload": {
-        "title": "Some title",
-        "description": "And its description"
-    }
+    "services": [
+        { 
+            "type": "facebook",
+            "payload": {
+                "title": "Some title",
+                "description": "And its description"
+            }
+        }
+    ]
 }
 
 # Slack service
 POST http://localhost:8080
 Content-Type: application/json
 {
-    "service": "slack",
-    "payload": {
-        "text": "Hello Slack world"
-    }
+    "services": [
+        { 
+            "type": "slack",
+            "payload": {
+                "text": "Hello Slack world"
+            }
+        },
+        { 
+            "type": "slack",
+            "payload": {
+                "text": "John Doe"
+            }
+        }
+    ]
+}
+
+# empty services
+POST http://localhost:8080
+Content-Type: application/json
+{
+    "services": []
 }
