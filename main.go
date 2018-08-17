@@ -1,19 +1,18 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
-	"errors"
-	"fmt"
 	"log"
+	"message-centre/services"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	"github.com/jpillora/ipfilter"
 )
+
+var AllowedIPs = []string{"::1"}
 
 type Shareable interface {
 	Share(http.ResponseWriter) error
@@ -26,45 +25,6 @@ type Service struct {
 
 type Payload struct {
 	Services []Service
-}
-
-type Twitter struct {
-	Tweet string
-}
-
-type Facebook struct {
-	Title       string `json:"title"`
-	Description string `json:"description"`
-}
-
-type Slack struct {
-	Icon string `json:"icon"`
-	Text string `json:"text"`
-}
-
-func (service Twitter) Share(w http.ResponseWriter) error {
-	return nil
-}
-
-func (service Facebook) Share(w http.ResponseWriter) error {
-	fmt.Fprintln(w, service.Title+" is "+service.Description)
-	return nil
-}
-
-func (service Slack) Share(w http.ResponseWriter) error {
-	if service.Text == "" {
-		return errors.New("Missing argument: Text")
-	}
-
-	hook := os.Getenv("SLACK_HOOK")
-	jsonValue, _ := json.Marshal(service)
-	resp, err := http.Post(hook, "application/json", bytes.NewBuffer(jsonValue))
-
-	if err != nil || resp.StatusCode != 200 {
-		return errors.New("Could not connect to Slack")
-	}
-
-	return nil
 }
 
 func jsonMessage(w http.ResponseWriter, msg string) {
@@ -89,7 +49,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	for _, service := range payload.Services {
 		switch strings.ToLower(service.Type) {
 		case "twitter":
-			var s Twitter
+			var s services.Twitter
 			err := json.Unmarshal(service.Payload, &s)
 			if err != nil {
 				http.Error(w, "No marshals for Twitter today.", http.StatusBadRequest)
@@ -104,7 +64,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			result["twitter"] = result["twitter"] + 1
 
 		case "facebook":
-			var s Facebook
+			var s services.Facebook
 			err := json.Unmarshal(service.Payload, &s)
 			if err != nil {
 				http.Error(w, "No marshals for Facebook today.", http.StatusBadRequest)
@@ -119,7 +79,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			result["facebook"] = result["facebook"] + 1
 
 		case "slack":
-			var s Slack
+			var s services.Slack
 			err := json.Unmarshal(service.Payload, &s)
 			if err != nil {
 				http.Error(w, "No marshals for Slack today.", http.StatusNotFound)
@@ -157,8 +117,8 @@ func main() {
 	r.HandleFunc("/", handler).Methods("POST")
 
 	f, err := ipfilter.New(ipfilter.Options{
-		AllowedIPs:     []string{"::1"},
 		BlockByDefault: true,
+		AllowedIPs:     AllowedIPs,
 	})
 
 	if err != nil {
